@@ -9,6 +9,7 @@ import de.xbrowniecodez.jbytemod.decompiler.ASMifierDecompiler;
 import de.xbrowniecodez.jbytemod.decompiler.JDCoreDecompiler;
 import de.xbrowniecodez.jbytemod.decompiler.VineflowerDecompiler;
 import de.xbrowniecodez.jbytemod.utils.BytecodeUtils;
+import de.xbrowniecodez.jbytemod.utils.apk.ApkSigningConfig;
 import de.xbrowniecodez.jbytemod.utils.attach.RemoteJarArchive;
 import de.xbrowniecodez.jbytemod.utils.attach.RuntimeJarArchive;
 import de.xbrowniecodez.jbytemod.utils.task.AttachTask;
@@ -63,8 +64,10 @@ public final class JByteModPluginContext implements PluginContext {
 
         ArchiveType type = archive instanceof RemoteJarArchive ? ArchiveType.REMOTE_JVM
                 : archive instanceof RuntimeJarArchive ? ArchiveType.CURRENT_JVM
+                : archive instanceof ApkArchive ? ArchiveType.APK
                 : archive.isSingleEntry() ? ArchiveType.CLASS : ArchiveType.ARCHIVE;
-        int resourceCount = type == ArchiveType.ARCHIVE && archive.getOutput() != null
+        int resourceCount = (type == ArchiveType.ARCHIVE || type == ArchiveType.APK)
+                && archive.getOutput() != null
                 ? (int) archive.getOutput().keySet().stream().filter(path -> !isClassResourcePath(path)).count()
                 : 0;
         return new ArchiveInfo(type, resourceCount, jByteMod.getLastEditFile());
@@ -180,9 +183,20 @@ public final class JByteModPluginContext implements PluginContext {
 
     @Override
     public String saveFile(String path) throws Exception {
+        try (ApkSigningOptions signingOptions = ApkSigningOptions.debugKey()) {
+            return saveFile(path, signingOptions);
+        }
+    }
+
+    @Override
+    public String saveFile(String path, ApkSigningOptions signingOptions) throws Exception {
         JarArchive archive = jByteMod.getJarArchive();
         if (archive == null || archive.getClasses() == null) {
             throw new IllegalStateException("No archive is open in JByteMod");
+        }
+        Objects.requireNonNull(signingOptions, "signingOptions");
+        if (!(archive instanceof ApkArchive) && !signingOptions.usesDebugKey()) {
+            throw new IllegalArgumentException("Custom signing options can only be used when saving an APK");
         }
 
         Path outputPath = Path.of(Objects.requireNonNull(path, "path")).toAbsolutePath().normalize();
@@ -201,7 +215,19 @@ public final class JByteModPluginContext implements PluginContext {
 
         AtomicReference<SaveTask> task = new AtomicReference<>();
         Path finalOutputPath = outputPath;
-        runOnEdt(() -> task.set(jByteMod.saveFileChecked(finalOutputPath.toFile())));
+        char[] storePassword = signingOptions.getStorePassword();
+        char[] keyPassword = signingOptions.getKeyPassword();
+        ApkSigningConfig signingConfig;
+        try {
+            signingConfig = signingOptions.usesDebugKey()
+                    ? ApkSigningConfig.debugKey()
+                    : ApkSigningConfig.customKey(signingOptions.getKeystore(), signingOptions.getAlias(),
+                            storePassword, keyPassword);
+        } finally {
+            Arrays.fill(storePassword, '\0');
+            Arrays.fill(keyPassword, '\0');
+        }
+        runOnEdt(() -> task.set(jByteMod.saveFileChecked(finalOutputPath.toFile(), signingConfig)));
         try {
             task.get().get();
         } catch (ExecutionException exception) {
