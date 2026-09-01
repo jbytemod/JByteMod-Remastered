@@ -10,7 +10,7 @@
 JByteMod Remastered is an enhanced Java bytecode editor that offers a wide array of features for decompiling, editing, and recompiling Java class files. This version includes improvements over the original JByteMod, making it a versatile tool for Java developers and enthusiasts.
 
 ## Features
--   **Android APK Support** (Decompile only at the moment)
+-   **Android APK Support**: Open, inspect, edit, and rebuild single- and multidex APK files while preserving their resources.
 -   **Advanced Bytecode Editing**: Intuitive interface for directly modifying Java bytecode.
 -   **Running JVM Attachment**: Attach to a local JVM to inspect or dump loaded classes and apply compatible bytecode changes at runtime.
 -   **Decompiler Integration**: Use CFR, Vineflower, Procyon, JD-Core, Koffee, and ASMifier. Packaged builds compile the latest CFR master source instead of using the old published release.
@@ -45,6 +45,8 @@ JByteMod Remastered is an enhanced Java bytecode editor that offers a wide array
     ```
 
 4. Alternatively, drag and drop `.jar`, `.apk`, or `.class` files directly onto the JByteMod Remastered window to open them for editing.
+
+Rebuilt APK files are automatically zip-aligned, signed, and signature-verified. At save time, choose either your own JKS/PKCS#12 keystore or JByteMod's persistent debug key. Keystore passwords are kept only for the current save and are not stored in JByteMod's configuration. The debug key is generated as `jbytemod-debug.p12` in JByteMod's working directory on its first use, so debug-signed APKs saved by the same installation can update one another. Existing APK signatures are removed because modifying an APK invalidates them.
 
 ### Attaching to a running JVM
 
@@ -94,7 +96,7 @@ The application is written to `jbytemod-core/target/JByteMod-Remastered-<version
 -   **Editing Bytecode**: Select a method from the left panel to view and modify its bytecode.
 -   **Decompiling**: Switch to the `Decompiler` tab to view and edit decompiled Java source code.
 -   **Generating Control Flow Diagrams**: In the `Analysis` tab, select a method to generate and view its control flow diagram, you can also save it by clicking `Save`.
--   **Saving Changes**: After making edits, save your changes via `File` > `Save`.
+-   **Saving Changes**: After making edits, save your changes via `File` > `Save`. APK classes are compiled back to DEX and written with the original resources, then JByteMod prompts for a debug or custom signing key before aligning, signing, and verifying the APK.
 
 ### Contributing
 

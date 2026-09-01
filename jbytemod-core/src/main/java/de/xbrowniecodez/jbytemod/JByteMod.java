@@ -24,6 +24,8 @@ import me.grax.jbytemod.ui.tree.SortedTreeNode;
 import me.grax.jbytemod.utils.ErrorDisplay;
 import de.xbrowniecodez.jbytemod.utils.gui.LookUtils;
 import de.xbrowniecodez.jbytemod.utils.attach.RemoteJarArchive;
+import de.xbrowniecodez.jbytemod.archive.ApkArchive;
+import de.xbrowniecodez.jbytemod.utils.apk.ApkSigningConfig;
 import de.xbrowniecodez.jbytemod.utils.task.AttachTask;
 import de.xbrowniecodez.jbytemod.utils.task.LoadTask;
 import de.xbrowniecodez.jbytemod.utils.task.RetransformTask;
@@ -215,7 +217,10 @@ public class JByteMod extends JFrame {
     }
 
     private LoadTask loadZipFile(File input) throws Exception {
-        JarArchive archive = new JarArchive(new HashMap<>(), new HashMap<>());
+        boolean apk = input.getName().toLowerCase(Locale.ROOT).endsWith(".apk");
+        JarArchive archive = apk
+                ? new ApkArchive(new HashMap<>(), new HashMap<>())
+                : new JarArchive(new HashMap<>(), new HashMap<>());
         LoadTask task = new LoadTask(this, input, archive);
         replaceArchive(archive);
         task.execute();
@@ -378,18 +383,28 @@ public class JByteMod extends JFrame {
     }
 
     public void saveFile(File output) {
+        saveFile(output, ApkSigningConfig.debugKey());
+    }
+
+    public void saveFile(File output, ApkSigningConfig apkSigningConfig) {
         try {
-            saveFileChecked(output);
+            saveFileChecked(output, apkSigningConfig);
         } catch (Throwable t) {
+            apkSigningConfig.close();
             new ErrorDisplay(t);
         }
     }
 
     public SaveTask saveFileChecked(File output) {
+        return saveFileChecked(output, ApkSigningConfig.debugKey());
+    }
+
+    public SaveTask saveFileChecked(File output, ApkSigningConfig apkSigningConfig) {
         if (jarArchive == null || jarArchive.getClasses() == null) {
+            apkSigningConfig.close();
             throw new IllegalStateException("No archive is open");
         }
-        SaveTask task = new SaveTask(this, output, jarArchive);
+        SaveTask task = new SaveTask(this, output, jarArchive, apkSigningConfig);
         task.execute();
         return task;
     }

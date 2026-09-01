@@ -4,6 +4,7 @@ import com.sun.tools.attach.VirtualMachine;
 import com.sun.tools.attach.VirtualMachineDescriptor;
 import de.xbrowniecodez.jbytemod.JByteMod;
 import de.xbrowniecodez.jbytemod.Main;
+import de.xbrowniecodez.jbytemod.archive.ApkArchive;
 import de.xbrowniecodez.jbytemod.decompiler.ASMifierDecompiler;
 import de.xbrowniecodez.jbytemod.decompiler.JDCoreDecompiler;
 import de.xbrowniecodez.jbytemod.decompiler.VineflowerDecompiler;
@@ -188,9 +189,10 @@ public final class JByteModPluginContext implements PluginContext {
         if (Files.isDirectory(outputPath)) {
             throw new IllegalArgumentException("Output path is a directory: " + outputPath);
         }
-        if (archive.isSingleEntry()
-                && !outputPath.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".class")) {
-            outputPath = Path.of(outputPath + ".class");
+        String extension = archive.isSingleEntry() ? ".class"
+                : archive instanceof ApkArchive ? ".apk" : ".jar";
+        if (!outputPath.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(extension)) {
+            outputPath = Path.of(outputPath + extension);
         }
         Path parent = outputPath.getParent();
         if (parent != null) {

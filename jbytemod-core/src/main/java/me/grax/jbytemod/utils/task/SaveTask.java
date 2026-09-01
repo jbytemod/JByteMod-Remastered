@@ -2,6 +2,9 @@ package me.grax.jbytemod.utils.task;
 
 import de.xbrowniecodez.jbytemod.Main;
 import de.xbrowniecodez.jbytemod.JByteMod;
+import de.xbrowniecodez.jbytemod.archive.ApkArchive;
+import de.xbrowniecodez.jbytemod.utils.apk.ApkCompiler;
+import de.xbrowniecodez.jbytemod.utils.apk.ApkSigningConfig;
 import me.grax.jbytemod.JarArchive;
 import me.grax.jbytemod.ui.PageEndPanel;
 import me.grax.jbytemod.utils.ErrorDisplay;
@@ -26,11 +29,17 @@ public class SaveTask extends SwingWorker<Void, Integer> {
     private final File output;
     private final PageEndPanel jpb;
     private final JarArchive file;
+    private final ApkSigningConfig apkSigningConfig;
 
     public SaveTask(JByteMod jbm, File output, JarArchive file) {
+        this(jbm, output, file, ApkSigningConfig.debugKey());
+    }
+
+    public SaveTask(JByteMod jbm, File output, JarArchive file, ApkSigningConfig apkSigningConfig) {
         this.output = output;
         this.file = file;
         this.jpb = jbm.getPageEndPanel();
+        this.apkSigningConfig = apkSigningConfig;
     }
 
     @Override
@@ -52,6 +61,15 @@ public class SaveTask extends SwingWorker<Void, Integer> {
                 Files.write(this.output.toPath(), writer.toByteArray());
                 publish(100);
                 Main.INSTANCE.getLogger().log("Saving successful!");
+                return null;
+            }
+
+            if (this.file instanceof ApkArchive apkArchive) {
+                publish(0);
+                Main.INSTANCE.getLogger().log("Compiling Android DEX files...");
+                ApkCompiler.save(apkArchive, output.toPath(), flags, this::publish, apkSigningConfig);
+                Main.INSTANCE.getLogger().log("Saving successful! The APK was aligned, signed, and verified.");
+                publish(100);
                 return null;
             }
 
@@ -109,6 +127,8 @@ public class SaveTask extends SwingWorker<Void, Integer> {
             Main.INSTANCE.getLogger().log("Saving failed!");
             Throwable cause = exception.getCause() == null ? exception : exception.getCause();
             new ErrorDisplay(cause);
+        } finally {
+            apkSigningConfig.close();
         }
     }
 

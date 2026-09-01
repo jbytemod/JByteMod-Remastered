@@ -4,6 +4,7 @@ import com.googlecode.d2j.dex.Dex2Asm;
 import com.googlecode.d2j.node.DexFileNode;
 import com.googlecode.d2j.reader.DexFileReader;
 import de.xbrowniecodez.android.asm.Dex2ASMVisitorFactory;
+import de.xbrowniecodez.jbytemod.archive.ApkArchive;
 import de.xbrowniecodez.jbytemod.Main;
 import de.xbrowniecodez.jbytemod.utils.BytecodeUtils;
 import de.xbrowniecodez.jbytemod.utils.ClassUtils;
@@ -21,6 +22,7 @@ import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
@@ -103,10 +105,11 @@ public class LoadTask extends SwingWorker<Void, Integer> {
 
         final Enumeration<ZipEntry> entries = jar.getEntries();
         while (entries.hasMoreElements()) {
-            if (file.getName().endsWith(".jar"))
-                readJar(jar, entries.nextElement(), classes, otherFiles);
-            else
+            if (ja instanceof ApkArchive) {
                 readApk(jar, entries.nextElement(), classes, otherFiles);
+            } else {
+                readJar(jar, entries.nextElement(), classes, otherFiles);
+            }
         }
         jar.close();
         ja.setClasses(classes);
@@ -136,10 +139,10 @@ public class LoadTask extends SwingWorker<Void, Integer> {
                 String name = entry.getName();
                 byte[] bytes = IOUtils.toByteArray(zis);
 
-                if (file.getName().endsWith(".jar")) {
-                    readJarBytes(name, bytes, classes, otherFiles);
+                if (ja instanceof ApkArchive) {
+                    readApkBytes(name, bytes, classes, otherFiles, entry.getMethod());
                 } else {
-                    readApkBytes(name, bytes, classes, otherFiles);
+                    readJarBytes(name, bytes, classes, otherFiles);
                 }
             }
         }
@@ -159,7 +162,7 @@ public class LoadTask extends SwingWorker<Void, Integer> {
         String name = zipEntry.getName();
         try (InputStream jis = jar.getInputStream(zipEntry)) {
             byte[] bytes = IOUtils.toByteArray(jis);
-            readApkBytes(name, bytes, classes, otherFiles);
+            readApkBytes(name, bytes, classes, otherFiles, zipEntry.getMethod());
         } catch (Exception e) {
             e.printStackTrace();
             Main.INSTANCE.getLogger().err("Failed loading file: " + name);
@@ -167,12 +170,17 @@ public class LoadTask extends SwingWorker<Void, Integer> {
     }
 
     private void readApkBytes(String name, byte[] bytes, Map<String, ClassNode> classes,
-            Map<String, byte[]> otherFiles) {
+            Map<String, byte[]> otherFiles, int method) {
         Dex2Asm dex2ASM = new Dex2Asm();
         long startTime = System.currentTimeMillis();
 
         try {
+            ApkArchive apkArchive = (ApkArchive) ja;
+            apkArchive.recordEntry(name, method);
             if (name.startsWith("classes") && name.endsWith(".dex")) {
+                if (bytes.length >= 8) {
+                    apkArchive.includeDexVersion(dexMinApi(bytes));
+                }
                 DexFileReader dexFileReader = new DexFileReader(bytes);
 
                 DexFileNode dexFileNode = new DexFileNode();
@@ -184,6 +192,7 @@ public class LoadTask extends SwingWorker<Void, Integer> {
                     dex2ASM.convertClass(dexClassNode, dex2ASMVisitorFactory);
 
                     classes.put(classNode.name, classNode);
+                    apkArchive.recordDexClass(classNode.name, name);
 
                     updateProgress(dexFileNode.clzs.size());
                 });
@@ -322,5 +331,20 @@ public class LoadTask extends SwingWorker<Void, Integer> {
             Throwable cause = exception.getCause() == null ? exception : exception.getCause();
             new ErrorDisplay(cause);
         }
+    }
+
+    private static int dexMinApi(byte[] bytes) {
+        if (bytes.length < 8 || bytes[0] != 'd' || bytes[1] != 'e' || bytes[2] != 'x'
+                || bytes[3] != '\n' || bytes[7] != 0) {
+            return 13;
+        }
+        return switch (new String(bytes, 4, 3, StandardCharsets.US_ASCII)) {
+            case "037" -> 24;
+            case "038" -> 26;
+            case "039" -> 28;
+            case "040" -> 30;
+            case "041" -> 35;
+            default -> 13;
+        };
     }
 }

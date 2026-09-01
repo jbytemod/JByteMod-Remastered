@@ -5,7 +5,10 @@ import com.sun.tools.attach.VirtualMachine;
 import com.sun.tools.attach.VirtualMachineDescriptor;
 import de.xbrowniecodez.jbytemod.Main;
 import de.xbrowniecodez.jbytemod.JByteMod;
+import de.xbrowniecodez.jbytemod.archive.ApkArchive;
 import de.xbrowniecodez.jbytemod.plugin.Plugin;
+import de.xbrowniecodez.jbytemod.ui.dialogue.ApkSigningDialog;
+import de.xbrowniecodez.jbytemod.utils.apk.ApkSigningConfig;
 import me.grax.jbytemod.res.LanguageRes;
 import me.grax.jbytemod.res.Option;
 import me.grax.jbytemod.res.Options;
@@ -981,20 +984,31 @@ public class MyMenuBar extends JMenuBar {
     protected void openSaveDialogue() {
         if (jbm.getJarArchive() != null) {
             boolean isClass = jbm.getJarArchive().isSingleEntry();
+            boolean isApk = jbm.getJarArchive() instanceof ApkArchive;
+            String extension = isClass ? "class" : isApk ? "apk" : "jar";
+            String description = isClass ? "Java Class (*.class)"
+                    : isApk ? "Signed Android Package (*.apk)" : "Java Package (*.jar)";
             JFileChooser jfc = new JFileChooser(new File(System.getProperty("user.home") + File.separator + "Desktop"));
             jfc.setAcceptAllFileFilterUsed(false);
             jfc.setDialogTitle("Save");
-            jfc.setFileFilter(new FileNameExtensionFilter(isClass ? "Java Class (*.class)" : "Java Package (*.jar)",
-                    isClass ? "class" : "jar"));
+            jfc.setFileFilter(new FileNameExtensionFilter(description, extension));
             int result = jfc.showSaveDialog(this);
             if (result == JFileChooser.APPROVE_OPTION) {
                 File output = jfc.getSelectedFile();
-                if(!output.getAbsolutePath().endsWith(".jar")) {
-                    output = new File(output.getAbsolutePath() + ".jar");
+                if (!output.getName().toLowerCase(Locale.ROOT).endsWith("." + extension)) {
+                    output = new File(output.getAbsolutePath() + "." + extension);
+                }
+                ApkSigningConfig signingConfig = isApk ? ApkSigningDialog.show(jbm) : null;
+                if (isApk && signingConfig == null) {
+                    return;
                 }
                 this.lastFile = output;
                  Main.INSTANCE.getLogger().log("Selected output file: " + output.getAbsolutePath());
-                jbm.saveFile(output);
+                if (signingConfig == null) {
+                    jbm.saveFile(output);
+                } else {
+                    jbm.saveFile(output, signingConfig);
+                }
             }
         }
     }
@@ -1002,7 +1016,8 @@ public class MyMenuBar extends JMenuBar {
     protected void openLoadDialogue() {
         JFileChooser jfc = new JFileChooser(new File(System.getProperty("user.home") + File.separator + "Desktop"));
         jfc.setAcceptAllFileFilterUsed(false);
-        jfc.setFileFilter(new FileNameExtensionFilter("Java Package (*.jar) or Java Class (*.class)", "jar", "class"));
+        jfc.setFileFilter(new FileNameExtensionFilter(
+                "Java or Android Package (*.jar, *.apk) or Java Class (*.class)", "jar", "apk", "class"));
         int result = jfc.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             File input = jfc.getSelectedFile();
