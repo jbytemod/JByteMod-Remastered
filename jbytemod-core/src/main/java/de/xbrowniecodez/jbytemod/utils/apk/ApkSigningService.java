@@ -34,18 +34,8 @@ public final class ApkSigningService {
 
     public static void sign(Path input, Path output, int minSdkVersion, ApkSigningConfig config)
             throws IOException {
-        char[] storePassword = null;
-        char[] keyPassword = null;
         try {
-            SigningKey signingKey;
-            if (config.usesDebugKey()) {
-                signingKey = loadDebugSigningKey();
-            } else {
-                storePassword = config.getStorePassword();
-                keyPassword = config.getKeyPassword();
-                signingKey = loadSigningKey(config.getKeystore(), config.getAlias(),
-                        storePassword, keyPassword);
-            }
+            SigningKey signingKey = loadSigningKey(config);
 
             ApkSigner.SignerConfig signerConfig = new ApkSigner.SignerConfig.Builder(
                     "JBYTEMOD", signingKey.privateKey(), signingKey.certificates()).build();
@@ -68,6 +58,19 @@ public final class ApkSigningService {
             }
         } catch (GeneralSecurityException | ApkFormatException | RuntimeException e) {
             throw new IOException("Could not sign rebuilt APK", e);
+        }
+    }
+
+    static SigningKey loadSigningKey(ApkSigningConfig config)
+            throws IOException, GeneralSecurityException {
+        if (config.usesDebugKey()) {
+            return loadDebugSigningKey();
+        }
+        char[] storePassword = config.getStorePassword();
+        char[] keyPassword = config.getKeyPassword();
+        try {
+            return loadSigningKey(config.getKeystore(), config.getAlias(),
+                    storePassword, keyPassword);
         } finally {
             clear(storePassword);
             clear(keyPassword);
@@ -191,6 +194,6 @@ public final class ApkSigningService {
         }
     }
 
-    private record SigningKey(PrivateKey privateKey, List<X509Certificate> certificates) {
+    record SigningKey(PrivateKey privateKey, List<X509Certificate> certificates) {
     }
 }

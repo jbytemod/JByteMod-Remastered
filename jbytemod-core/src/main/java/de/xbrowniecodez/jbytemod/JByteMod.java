@@ -24,6 +24,7 @@ import me.grax.jbytemod.ui.tree.SortedTreeNode;
 import me.grax.jbytemod.utils.ErrorDisplay;
 import de.xbrowniecodez.jbytemod.utils.gui.LookUtils;
 import de.xbrowniecodez.jbytemod.utils.attach.RemoteJarArchive;
+import de.xbrowniecodez.jbytemod.archive.AabArchive;
 import de.xbrowniecodez.jbytemod.archive.ApkArchive;
 import de.xbrowniecodez.jbytemod.utils.apk.ApkSigningConfig;
 import de.xbrowniecodez.jbytemod.utils.task.AttachTask;
@@ -188,7 +189,7 @@ public class JByteMod extends JFrame {
     }
 
     /**
-     * Load .jar, .class or .apk file
+     * Load .jar, .class, .apk, or .aab file
      */
     public void loadFile(File input) {
         try {
@@ -205,7 +206,7 @@ public class JByteMod extends JFrame {
         String ap = input.getAbsolutePath().toLowerCase(Locale.ROOT);
 
         LoadTask task = null;
-        if (ap.endsWith(".jar") || ap.endsWith(".apk")) {
+        if (ap.endsWith(".jar") || ap.endsWith(".apk") || ap.endsWith(".aab")) {
             task = loadZipFile(input);
         } else if (ap.endsWith(".class")) {
             loadClassFile(input);
@@ -217,10 +218,12 @@ public class JByteMod extends JFrame {
     }
 
     private LoadTask loadZipFile(File input) throws Exception {
-        boolean apk = input.getName().toLowerCase(Locale.ROOT).endsWith(".apk");
-        JarArchive archive = apk
+        String name = input.getName().toLowerCase(Locale.ROOT);
+        JarArchive archive = name.endsWith(".apk")
                 ? new ApkArchive(new HashMap<>(), new HashMap<>())
-                : new JarArchive(new HashMap<>(), new HashMap<>());
+                : name.endsWith(".aab")
+                        ? new AabArchive(new HashMap<>(), new HashMap<>())
+                        : new JarArchive(new HashMap<>(), new HashMap<>());
         LoadTask task = new LoadTask(this, input, archive);
         replaceArchive(archive);
         task.execute();

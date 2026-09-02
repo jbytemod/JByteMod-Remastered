@@ -44,6 +44,7 @@ public final class FileDropHandler extends TransferHandler {
 
     private static boolean isSupported(File file) {
         String name = file.getName().toLowerCase(Locale.ROOT);
-        return name.endsWith(".jar") || name.endsWith(".class") || name.endsWith(".apk");
+        return name.endsWith(".jar") || name.endsWith(".class")
+                || name.endsWith(".apk") || name.endsWith(".aab");
     }
 }

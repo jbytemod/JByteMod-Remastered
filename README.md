@@ -10,14 +10,14 @@
 JByteMod Remastered is an enhanced Java bytecode editor that offers a wide array of features for decompiling, editing, and recompiling Java class files. This version includes improvements over the original JByteMod, making it a versatile tool for Java developers and enthusiasts.
 
 ## Features
--   **Android APK Support**: Open, inspect, edit, and rebuild single- and multidex APK files while preserving their resources.
+-   **Android Archive Support**: Open, inspect, edit, and rebuild single- and multidex APK and Android App Bundle (`.aab`) files while preserving their resources.
 -   **Advanced Bytecode Editing**: Intuitive interface for directly modifying Java bytecode.
 -   **Running JVM Attachment**: Attach to a local JVM to inspect or dump loaded classes and apply compatible bytecode changes at runtime.
 -   **Decompiler Integration**: Use CFR, Vineflower, Procyon, JD-Core, Koffee, and ASMifier. Packaged builds compile the latest CFR master source instead of using the old published release.
 -   **Graphical Bytecode Viewer**: Visualize bytecode in a graphical format for easier comprehension.
 -   **Control Flow Visualization**: Generate and view control flow diagrams of methods to understand execution flow better.
 -   **Call Graph Explorer**: Explore callers and callees across the loaded archive and navigate directly to methods or their exact calling instructions.
--   **Drag and Drop Functionality**: Easily drag and drop `.jar`, `.apk`, and `.class` files onto the window for quick access.
+-   **Drag and Drop Functionality**: Easily drag and drop `.jar`, `.apk`, `.aab`, and `.class` files onto the window for quick access.
 -   **Search and Replace**: Effortlessly find and replace bytecode instructions.
 -   **Constant Pool Editor**: Manage and edit constant pool entries within class files.
 -   **Plugin System**: Browse, install, update, enable, and disable extensions through the built-in plugin repository.
@@ -44,9 +44,9 @@ JByteMod Remastered is an enhanced Java bytecode editor that offers a wide array
     java -jar JByteMod-Remastered.jar
     ```
 
-4. Alternatively, drag and drop `.jar`, `.apk`, or `.class` files directly onto the JByteMod Remastered window to open them for editing.
+4. Alternatively, drag and drop `.jar`, `.apk`, `.aab`, or `.class` files directly onto the JByteMod Remastered window to open them for editing.
 
-Rebuilt APK files are automatically zip-aligned, signed, and signature-verified. At save time, choose either your own JKS/PKCS#12 keystore or JByteMod's persistent debug key. Keystore passwords are kept only for the current save and are not stored in JByteMod's configuration. The debug key is generated as `jbytemod-debug.p12` in JByteMod's working directory on its first use, so debug-signed APKs saved by the same installation can update one another. Existing APK signatures are removed because modifying an APK invalidates them.
+Rebuilt APK files are automatically zip-aligned, signed, and signature-verified. Android App Bundles are rebuilt with their module-specific DEX paths, JAR-signed, and signature-verified; zip alignment does not apply to bundles. At save time, choose either your own JKS/PKCS#12 keystore or JByteMod's persistent debug key. Keystore passwords are kept only for the current save and are not stored in JByteMod's configuration. The debug key is generated as `jbytemod-debug.p12` in JByteMod's working directory on its first use, so Android archives signed by the same installation use a consistent key. Existing signatures are removed because modifying an archive invalidates them.
 
 ### Attaching to a running JVM
 
@@ -92,11 +92,11 @@ The application is written to `jbytemod-core/target/JByteMod-Remastered-<version
 
 ### Getting Started
 
--   **Opening Files**: Use the drag and drop feature or navigate through `File` > `Open` to load `.jar`, `.apk`, or `.class` files.
+-   **Opening Files**: Use the drag and drop feature or navigate through `File` > `Open` to load `.jar`, `.apk`, `.aab`, or `.class` files.
 -   **Editing Bytecode**: Select a method from the left panel to view and modify its bytecode.
 -   **Decompiling**: Switch to the `Decompiler` tab to view and edit decompiled Java source code.
 -   **Generating Control Flow Diagrams**: In the `Analysis` tab, select a method to generate and view its control flow diagram, you can also save it by clicking `Save`.
--   **Saving Changes**: After making edits, save your changes via `File` > `Save`. APK classes are compiled back to DEX and written with the original resources, then JByteMod prompts for a debug or custom signing key before aligning, signing, and verifying the APK.
+-   **Saving Changes**: After making edits, save your changes via `File` > `Save`. APK and AAB classes are compiled back to DEX and written with the original resources and module paths, then JByteMod prompts for a debug or custom signing key before signing and verifying the archive. APK output is also zip-aligned.
 
 ### Contributing
 

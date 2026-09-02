@@ -2,7 +2,8 @@ package me.grax.jbytemod.utils.task;
 
 import de.xbrowniecodez.jbytemod.Main;
 import de.xbrowniecodez.jbytemod.JByteMod;
-import de.xbrowniecodez.jbytemod.archive.ApkArchive;
+import de.xbrowniecodez.jbytemod.archive.AabArchive;
+import de.xbrowniecodez.jbytemod.archive.AndroidArchive;
 import de.xbrowniecodez.jbytemod.utils.apk.ApkCompiler;
 import de.xbrowniecodez.jbytemod.utils.apk.ApkSigningConfig;
 import me.grax.jbytemod.JarArchive;
@@ -64,11 +65,14 @@ public class SaveTask extends SwingWorker<Void, Integer> {
                 return null;
             }
 
-            if (this.file instanceof ApkArchive apkArchive) {
+            if (this.file instanceof AndroidArchive androidArchive) {
+                boolean appBundle = androidArchive instanceof AabArchive;
                 publish(0);
                 Main.INSTANCE.getLogger().log("Compiling Android DEX files...");
-                ApkCompiler.save(apkArchive, output.toPath(), flags, this::publish, apkSigningConfig);
-                Main.INSTANCE.getLogger().log("Saving successful! The APK was aligned, signed, and verified.");
+                ApkCompiler.save(androidArchive, output.toPath(), flags, this::publish, apkSigningConfig);
+                Main.INSTANCE.getLogger().log(appBundle
+                        ? "Saving successful! The Android App Bundle was signed and verified."
+                        : "Saving successful! The APK was aligned, signed, and verified.");
                 publish(100);
                 return null;
             }

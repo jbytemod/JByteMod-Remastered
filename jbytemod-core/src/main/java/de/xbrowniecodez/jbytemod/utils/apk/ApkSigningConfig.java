@@ -3,7 +3,7 @@ package de.xbrowniecodez.jbytemod.utils.apk;
 import java.nio.file.Path;
 import java.util.Arrays;
 
-/** Signing credentials for one APK save operation. */
+/** Signing credentials for one APK or Android App Bundle save operation. */
 public final class ApkSigningConfig implements AutoCloseable {
     private final Path keystore;
     private final String alias;

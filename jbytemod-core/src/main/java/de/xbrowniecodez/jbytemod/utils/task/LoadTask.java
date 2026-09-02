@@ -4,7 +4,8 @@ import com.googlecode.d2j.dex.Dex2Asm;
 import com.googlecode.d2j.node.DexFileNode;
 import com.googlecode.d2j.reader.DexFileReader;
 import de.xbrowniecodez.android.asm.Dex2ASMVisitorFactory;
-import de.xbrowniecodez.jbytemod.archive.ApkArchive;
+import de.xbrowniecodez.jbytemod.archive.AabArchive;
+import de.xbrowniecodez.jbytemod.archive.AndroidArchive;
 import de.xbrowniecodez.jbytemod.Main;
 import de.xbrowniecodez.jbytemod.utils.BytecodeUtils;
 import de.xbrowniecodez.jbytemod.utils.ClassUtils;
@@ -105,8 +106,8 @@ public class LoadTask extends SwingWorker<Void, Integer> {
 
         final Enumeration<ZipEntry> entries = jar.getEntries();
         while (entries.hasMoreElements()) {
-            if (ja instanceof ApkArchive) {
-                readApk(jar, entries.nextElement(), classes, otherFiles);
+            if (ja instanceof AndroidArchive) {
+                readAndroidArchive(jar, entries.nextElement(), classes, otherFiles);
             } else {
                 readJar(jar, entries.nextElement(), classes, otherFiles);
             }
@@ -139,8 +140,8 @@ public class LoadTask extends SwingWorker<Void, Integer> {
                 String name = entry.getName();
                 byte[] bytes = IOUtils.toByteArray(zis);
 
-                if (ja instanceof ApkArchive) {
-                    readApkBytes(name, bytes, classes, otherFiles, entry.getMethod());
+                if (ja instanceof AndroidArchive) {
+                    readAndroidArchiveBytes(name, bytes, classes, otherFiles, entry.getMethod());
                 } else {
                     readJarBytes(name, bytes, classes, otherFiles);
                 }
@@ -157,29 +158,29 @@ public class LoadTask extends SwingWorker<Void, Integer> {
         }
     }
 
-    private void readApk(ZipFile jar, ZipEntry zipEntry, Map<String, ClassNode> classes,
+    private void readAndroidArchive(ZipFile jar, ZipEntry zipEntry, Map<String, ClassNode> classes,
             Map<String, byte[]> otherFiles) {
         String name = zipEntry.getName();
         try (InputStream jis = jar.getInputStream(zipEntry)) {
             byte[] bytes = IOUtils.toByteArray(jis);
-            readApkBytes(name, bytes, classes, otherFiles, zipEntry.getMethod());
+            readAndroidArchiveBytes(name, bytes, classes, otherFiles, zipEntry.getMethod());
         } catch (Exception e) {
             e.printStackTrace();
             Main.INSTANCE.getLogger().err("Failed loading file: " + name);
         }
     }
 
-    private void readApkBytes(String name, byte[] bytes, Map<String, ClassNode> classes,
+    private void readAndroidArchiveBytes(String name, byte[] bytes, Map<String, ClassNode> classes,
             Map<String, byte[]> otherFiles, int method) {
         Dex2Asm dex2ASM = new Dex2Asm();
         long startTime = System.currentTimeMillis();
 
         try {
-            ApkArchive apkArchive = (ApkArchive) ja;
-            apkArchive.recordEntry(name, method);
-            if (name.startsWith("classes") && name.endsWith(".dex")) {
+            AndroidArchive androidArchive = (AndroidArchive) ja;
+            androidArchive.recordEntry(name, method);
+            if (isDexEntry(name)) {
                 if (bytes.length >= 8) {
-                    apkArchive.includeDexVersion(dexMinApi(bytes));
+                    androidArchive.includeDexVersion(dexMinApi(bytes));
                 }
                 DexFileReader dexFileReader = new DexFileReader(bytes);
 
@@ -192,7 +193,7 @@ public class LoadTask extends SwingWorker<Void, Integer> {
                     dex2ASM.convertClass(dexClassNode, dex2ASMVisitorFactory);
 
                     classes.put(classNode.name, classNode);
-                    apkArchive.recordDexClass(classNode.name, name);
+                    androidArchive.recordDexClass(classNode.name, name);
 
                     updateProgress(dexFileNode.clzs.size());
                 });
@@ -206,8 +207,25 @@ public class LoadTask extends SwingWorker<Void, Integer> {
             handleMemoryWarning(startTime, bytes);
         } catch (Exception e) {
             e.printStackTrace();
-            Main.INSTANCE.getLogger().err("Failed loading APK file: " + name);
+            Main.INSTANCE.getLogger().err("Failed loading Android archive file: " + name);
         }
+    }
+
+    private boolean isDexEntry(String name) {
+        String normalized = name.replace('\\', '/');
+        int slash = normalized.lastIndexOf('/');
+        String fileName = slash < 0 ? normalized : normalized.substring(slash + 1);
+        if (!fileName.startsWith("classes") || !fileName.endsWith(".dex")) {
+            return false;
+        }
+        String index = fileName.substring("classes".length(), fileName.length() - ".dex".length());
+        if (!index.isEmpty() && !index.chars().allMatch(Character::isDigit)) {
+            return false;
+        }
+        if (ja instanceof AabArchive) {
+            return slash > 0 && normalized.substring(0, slash).endsWith("/dex");
+        }
+        return slash < 0;
     }
 
     private void updateProgress(int num) {

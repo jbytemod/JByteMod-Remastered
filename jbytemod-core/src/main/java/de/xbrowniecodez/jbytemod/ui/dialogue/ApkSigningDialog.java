@@ -51,11 +51,11 @@ public final class ApkSigningDialog {
         choices.add(customKey);
 
         JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.add(new JLabel("Choose how the rebuilt APK should be signed:"), BorderLayout.NORTH);
+        panel.add(new JLabel("Choose how the rebuilt Android archive should be signed:"), BorderLayout.NORTH);
         panel.add(choices, BorderLayout.CENTER);
         panel.add(customFields, BorderLayout.SOUTH);
 
-        while (JOptionPane.showConfirmDialog(parent, panel, "APK signing",
+        while (JOptionPane.showConfirmDialog(parent, panel, "Android archive signing",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
             if (debugKey.isSelected()) {
                 clear(storePassword, keyPassword);
@@ -114,7 +114,7 @@ public final class ApkSigningDialog {
 
     private static void chooseKeystore(Component parent, JTextField field) {
         JFileChooser chooser = new JFileChooser(new File(System.getProperty("user.home", ".")));
-        chooser.setDialogTitle("Select APK signing keystore");
+        chooser.setDialogTitle("Select Android signing keystore");
         chooser.setFileFilter(new FileNameExtensionFilter(
                 "Java keystore (*.jks, *.keystore, *.p12, *.pfx)",
                 "jks", "keystore", "p12", "pfx"));

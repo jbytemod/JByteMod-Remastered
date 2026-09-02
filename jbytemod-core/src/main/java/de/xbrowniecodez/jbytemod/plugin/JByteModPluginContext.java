@@ -4,6 +4,8 @@ import com.sun.tools.attach.VirtualMachine;
 import com.sun.tools.attach.VirtualMachineDescriptor;
 import de.xbrowniecodez.jbytemod.JByteMod;
 import de.xbrowniecodez.jbytemod.Main;
+import de.xbrowniecodez.jbytemod.archive.AabArchive;
+import de.xbrowniecodez.jbytemod.archive.AndroidArchive;
 import de.xbrowniecodez.jbytemod.archive.ApkArchive;
 import de.xbrowniecodez.jbytemod.decompiler.ASMifierDecompiler;
 import de.xbrowniecodez.jbytemod.decompiler.JDCoreDecompiler;
@@ -64,9 +66,10 @@ public final class JByteModPluginContext implements PluginContext {
 
         ArchiveType type = archive instanceof RemoteJarArchive ? ArchiveType.REMOTE_JVM
                 : archive instanceof RuntimeJarArchive ? ArchiveType.CURRENT_JVM
+                : archive instanceof AabArchive ? ArchiveType.AAB
                 : archive instanceof ApkArchive ? ArchiveType.APK
                 : archive.isSingleEntry() ? ArchiveType.CLASS : ArchiveType.ARCHIVE;
-        int resourceCount = (type == ArchiveType.ARCHIVE || type == ArchiveType.APK)
+        int resourceCount = (type == ArchiveType.ARCHIVE || type == ArchiveType.APK || type == ArchiveType.AAB)
                 && archive.getOutput() != null
                 ? (int) archive.getOutput().keySet().stream().filter(path -> !isClassResourcePath(path)).count()
                 : 0;
@@ -153,7 +156,8 @@ public final class JByteModPluginContext implements PluginContext {
         }
 
         String fileName = filePath.getFileName().toString().toLowerCase(Locale.ROOT);
-        if (!fileName.endsWith(".jar") && !fileName.endsWith(".class") && !fileName.endsWith(".apk")) {
+        if (!fileName.endsWith(".jar") && !fileName.endsWith(".class")
+                && !fileName.endsWith(".apk") && !fileName.endsWith(".aab")) {
             throw new IllegalArgumentException("Unsupported file type: " + filePath.getFileName());
         }
 
@@ -195,8 +199,9 @@ public final class JByteModPluginContext implements PluginContext {
             throw new IllegalStateException("No archive is open in JByteMod");
         }
         Objects.requireNonNull(signingOptions, "signingOptions");
-        if (!(archive instanceof ApkArchive) && !signingOptions.usesDebugKey()) {
-            throw new IllegalArgumentException("Custom signing options can only be used when saving an APK");
+        if (!(archive instanceof AndroidArchive) && !signingOptions.usesDebugKey()) {
+            throw new IllegalArgumentException(
+                    "Custom signing options can only be used when saving an APK or Android App Bundle");
         }
 
         Path outputPath = Path.of(Objects.requireNonNull(path, "path")).toAbsolutePath().normalize();
@@ -204,6 +209,7 @@ public final class JByteModPluginContext implements PluginContext {
             throw new IllegalArgumentException("Output path is a directory: " + outputPath);
         }
         String extension = archive.isSingleEntry() ? ".class"
+                : archive instanceof AabArchive ? ".aab"
                 : archive instanceof ApkArchive ? ".apk" : ".jar";
         if (!outputPath.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(extension)) {
             outputPath = Path.of(outputPath + extension);
