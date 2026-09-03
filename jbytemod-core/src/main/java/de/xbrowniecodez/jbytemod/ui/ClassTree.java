@@ -1,11 +1,12 @@
-package me.grax.jbytemod.ui;
+package de.xbrowniecodez.jbytemod.ui;
 
 import de.xbrowniecodez.jbytemod.Main;
 import de.xbrowniecodez.jbytemod.JByteMod;
-import de.xbrowniecodez.jbytemod.ui.FileDropHandler;
+import de.xbrowniecodez.jbytemod.archive.AndroidArchive;
 import me.grax.jbytemod.JarArchive;
 import de.xbrowniecodez.jbytemod.ui.dialogue.InsnEditDialogue;
-import me.grax.jbytemod.ui.tree.SortedTreeNode;
+import de.xbrowniecodez.jbytemod.ui.tree.SortedTreeNode;
+import me.grax.jbytemod.ui.TreeCellRenderer;
 import me.grax.jbytemod.utils.ErrorDisplay;
 import me.grax.jbytemod.utils.MethodUtils;
 import me.grax.jbytemod.utils.asm.FrameGen;
@@ -20,11 +21,15 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 public class ClassTree extends JTree {
@@ -33,10 +38,11 @@ public class ClassTree extends JTree {
     private JByteMod jbm;
     private DefaultTreeModel model;
     private HashMap<String, SortedTreeNode> preloadMap;
+    private boolean treeInitialized;
 
     public ClassTree(JByteMod jam) {
         this.jbm = jam;
-        this.setRootVisible(false);
+        this.setRootVisible(true);
         this.setShowsRootHandles(true);
         this.setCellRenderer(new TreeCellRenderer());
         this.addTreeSelectionListener(new TreeSelectionListener() {
@@ -48,12 +54,14 @@ public class ClassTree extends JTree {
                     jam.selectMethod(node.getClassNode(), node.getMethodNode());
                 } else if (node.getClassNode() != null) {
                     jam.selectClass(node.getClassNode());
-                } else {
-
+                } else if (node.getNodeKind() == SortedTreeNode.NodeKind.RESOURCE
+                        && node.getTreePathKey() != null) {
+                    jam.selectResource(node.getTreePathKey().substring("resource:".length()));
                 }
             }
         });
-        this.model = new DefaultTreeModel(new SortedTreeNode(""));
+        this.model = new DefaultTreeModel(new SortedTreeNode(
+                "No archive", SortedTreeNode.NodeKind.ARCHIVE, "archive"));
         this.setModel(model);
         this.setTransferHandler(new FileDropHandler(jbm::loadFile));
         this.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
@@ -62,9 +70,15 @@ public class ClassTree extends JTree {
 
     public void refreshTree(JarArchive jar) {
         DefaultTreeModel tm = this.model;
-        SortedTreeNode root = (SortedTreeNode) tm.getRoot();
-        root.removeAllChildren();
-        tm.reload();
+        SortedTreeNode root = new SortedTreeNode(
+                archiveLabel(jar), jar instanceof AndroidArchive
+                        ? SortedTreeNode.NodeKind.ANDROID_ARCHIVE
+                        : SortedTreeNode.NodeKind.ARCHIVE, "archive");
+
+        int classCount = jar.getClasses() == null ? 0 : jar.getClasses().size();
+        SortedTreeNode classesRoot = new SortedTreeNode(
+                "Classes (" + classCount + ")", SortedTreeNode.NodeKind.CLASSES, "classes");
+        root.add(classesRoot);
 
         preloadMap = new HashMap<>();
         if (jar.getClasses() != null)
@@ -75,7 +89,7 @@ public class ClassTree extends JTree {
 
                 int i = 0;
                 int slashIndex = 0;
-                SortedTreeNode prev = root;
+                SortedTreeNode prev = classesRoot;
                 while (true) {
                     slashIndex = name.indexOf("/", slashIndex + 1);
                     if (slashIndex == -1) {
@@ -86,7 +100,8 @@ public class ClassTree extends JTree {
                         prev = preloadMap.get(p);
                     } else {
                         try{
-                            SortedTreeNode stn = new SortedTreeNode(path[i]);
+                            SortedTreeNode stn = new SortedTreeNode(path[i],
+                                    SortedTreeNode.NodeKind.PACKAGE, "package:" + p);
                             prev.add(stn);
                             prev = stn;
                             preloadMap.put(p, prev);
@@ -102,12 +117,80 @@ public class ClassTree extends JTree {
                     clazz.add(new SortedTreeNode(c, m));
                 }
             }
+        addResources(root, jar.getOutput());
         boolean sort = Main.INSTANCE.getJByteMod().getOptions().get("sort_methods").getBoolean();
         sort(tm, root, sort);
-        tm.reload();
-        if (!expandedNodes.isEmpty()) {
-            expandSaved(root);
+        tm.setRoot(root);
+        if (!treeInitialized) {
+            expandedNodes.add("archive");
+            expandedNodes.add("classes");
+            treeInitialized = true;
         }
+        expandSaved(root);
+        revalidate();
+        repaint();
+    }
+
+    private void addResources(SortedTreeNode root, Map<String, byte[]> resources) {
+        List<String> names = resources == null ? List.of() : resources.keySet().stream()
+                .map(name -> name.replace('\\', '/'))
+                .filter(name -> !name.isBlank())
+                .filter(name -> !name.endsWith("/"))
+                .sorted()
+                .toList();
+        SortedTreeNode resourcesRoot = new SortedTreeNode(
+                "Resources (" + names.size() + ")", SortedTreeNode.NodeKind.RESOURCES, "resources");
+        root.add(resourcesRoot);
+
+        Map<String, SortedTreeNode> directories = new HashMap<>();
+        for (String name : names) {
+            String[] path = Arrays.stream(name.split("/"))
+                    .filter(segment -> !segment.isEmpty())
+                    .toArray(String[]::new);
+            if (path.length == 0) continue;
+
+            SortedTreeNode parent = resourcesRoot;
+            StringBuilder directoryPath = new StringBuilder();
+            for (int index = 0; index < path.length - 1; index++) {
+                if (!directoryPath.isEmpty()) directoryPath.append('/');
+                directoryPath.append(path[index]);
+                String key = directoryPath.toString();
+                SortedTreeNode directory = directories.get(key);
+                if (directory == null) {
+                    directory = new SortedTreeNode(path[index],
+                            SortedTreeNode.NodeKind.RESOURCE_DIRECTORY, "resource-directory:" + key);
+                    parent.add(directory);
+                    directories.put(key, directory);
+                }
+                parent = directory;
+            }
+            parent.add(new SortedTreeNode(path[path.length - 1],
+                    SortedTreeNode.NodeKind.RESOURCE, "resource:" + name));
+        }
+    }
+
+    private String archiveLabel(JarArchive archive) {
+        File source = jbm.getFilePath();
+        if (source != null && source.isFile()) {
+            return source.getName() + " (" + formatSize(source.length()) + ")";
+        }
+        String name = jbm.getLastEditFile();
+        if (name == null || name.isBlank()) {
+            name = archive.isSingleEntry() ? "Class file" : "Archive";
+        }
+        return name;
+    }
+
+    private static String formatSize(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        String[] units = {"KB", "MB", "GB", "TB"};
+        double value = bytes;
+        int unit = -1;
+        do {
+            value /= 1024d;
+            unit++;
+        } while (value >= 1024d && unit < units.length - 1);
+        return String.format(Locale.ROOT, "%.1f %s", value, units[unit]);
     }
 
 
@@ -149,8 +232,8 @@ public class ClassTree extends JTree {
     }
 
     private String expansionKey(SortedTreeNode node, TreePath path) {
-        if (node.getClassNode() != null) {
-            return "class:" + node.getClassNode().name;
+        if (node.getTreePathKey() != null) {
+            return node.getTreePathKey();
         }
         return "path:" + path;
     }
@@ -294,7 +377,9 @@ public class ClassTree extends JTree {
                                         jbm.getJarArchive().getClasses().remove(cn.name);
                                         TreeNode parent = stn.getParent();
                                         model.removeNodeFromParent(stn);
-                                        while (parent != null && !parent.children().hasMoreElements() && parent != model.getRoot()) {
+                                        while (parent != null && !parent.children().hasMoreElements()
+                                                && parent != model.getRoot()
+                                                && !((SortedTreeNode) parent).isStructural()) {
                                             TreeNode par = parent.getParent();
                                             model.removeNodeFromParent((MutableTreeNode) parent);
                                             parent = par;
@@ -307,6 +392,9 @@ public class ClassTree extends JTree {
                             menu.add(tools);
                             menu.show(ClassTree.this, me.getX(), me.getY());
                         } else {
+                            if (stn.isStructural() || stn.isResourceNode()) {
+                                return;
+                            }
                             JPopupMenu menu = new JPopupMenu();
                             JMenuItem remove = new JMenuItem(Main.INSTANCE.getJByteMod().getLanguageRes().getResource("remove"));
                             remove.addActionListener(new ActionListener() {
@@ -315,7 +403,9 @@ public class ClassTree extends JTree {
                                             Main.INSTANCE.getJByteMod().getLanguageRes().getResource("confirm"), JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
                                         TreeNode parent = stn.getParent();
                                         deleteItselfAndChilds(stn);
-                                        while (parent != null && !parent.children().hasMoreElements() && parent != model.getRoot()) {
+                                        while (parent != null && !parent.children().hasMoreElements()
+                                                && parent != model.getRoot()
+                                                && !((SortedTreeNode) parent).isStructural()) {
                                             TreeNode par = parent.getParent();
                                             model.removeNodeFromParent((MutableTreeNode) parent);
                                             parent = par;
@@ -365,7 +455,9 @@ public class ClassTree extends JTree {
     private String getPath(SortedTreeNode stn) {
         String path = "";
         while (stn != null && stn != model.getRoot()) {
-            path = stn.toString() + "/" + path;
+            if (stn.getNodeKind() == SortedTreeNode.NodeKind.PACKAGE) {
+                path = stn + "/" + path;
+            }
             stn = (SortedTreeNode) stn.getParent();
         }
         return path;
