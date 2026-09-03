@@ -4,6 +4,7 @@ import de.xbrowniecodez.jbytemod.Main;
 import de.xbrowniecodez.jbytemod.decompiler.ASMifierDecompiler;
 import de.xbrowniecodez.jbytemod.decompiler.CFRDecompiler;
 import de.xbrowniecodez.jbytemod.decompiler.JDCoreDecompiler;
+import de.xbrowniecodez.jbytemod.decompiler.ProcyonDecompiler;
 import de.xbrowniecodez.jbytemod.decompiler.VineflowerDecompiler;
 import de.xbrowniecodez.jbytemod.JByteMod;
 import me.grax.jbytemod.decompiler.*;
