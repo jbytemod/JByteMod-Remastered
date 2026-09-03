@@ -22,12 +22,13 @@ public class PageEndPanel extends JPanel {
         progressBar = new JProgressBar() {
             @Override
             public void setValue(int n) {
-                if (n == 100) {
+                int value = Math.max(0, Math.min(n, 100));
+                if (value == 100) {
                     super.setValue(0);
                     percentLabel.setText("");
                 } else {
-                    super.setValue(n);
-                    percentLabel.setText(n + "%");
+                    super.setValue(value);
+                    percentLabel.setText(value + "%");
                 }
             }
         };

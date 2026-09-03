@@ -172,6 +172,7 @@ public class LoadTask extends SwingWorker<Void, Integer> {
 
     private void readAndroidArchiveBytes(String name, byte[] bytes, Map<String, ClassNode> classes,
             Map<String, byte[]> otherFiles, int method) {
+        updateArchiveProgress();
         Dex2Asm dex2ASM = new Dex2Asm();
         long startTime = System.currentTimeMillis();
 
@@ -194,8 +195,6 @@ public class LoadTask extends SwingWorker<Void, Integer> {
 
                     classes.put(classNode.name, classNode);
                     androidArchive.recordDexClass(classNode.name, name);
-
-                    updateProgress(dexFileNode.clzs.size());
                 });
                 //dex2ASM.convertDex(dexFileNode, dex2ASMVisitorFactory);
             } else if (name.equals("META-INF/MANIFEST.MF")) {
@@ -228,9 +227,10 @@ public class LoadTask extends SwingWorker<Void, Integer> {
         return slash < 0;
     }
 
-    private void updateProgress(int num) {
-        int progress = (int) (((float) loaded++ / (float) num) * 100f);
-        publish(progress);
+    private void updateArchiveProgress() {
+        int total = Math.max(jarSize, 1);
+        int progress = (int) (((float) loaded++ / (float) total) * 100f);
+        publish(Math.min(progress, 99));
     }
 
     private void readJar(ZipFile jar, ZipEntry zipEntry, Map<String, ClassNode> classes,
@@ -248,10 +248,7 @@ public class LoadTask extends SwingWorker<Void, Integer> {
     private void readJarBytes(String name, byte[] bytes, Map<String, ClassNode> classes,
             Map<String, byte[]> otherFiles) {
         long startTime = System.currentTimeMillis();
-        int progress = (int) (((float) loaded++ / (float) jarSize) * 100f);
-        if (progress > 99)
-            progress = 99; // cap for fallback stream sizing
-        publish(progress);
+        updateArchiveProgress();
 
         try {
             if (ClassUtils.isClassFileExt(name)) {
