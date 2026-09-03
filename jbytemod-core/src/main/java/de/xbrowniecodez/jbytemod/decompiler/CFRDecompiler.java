@@ -1,7 +1,8 @@
-package me.grax.jbytemod.decompiler;
+package de.xbrowniecodez.jbytemod.decompiler;
 
 import de.xbrowniecodez.jbytemod.Main;
 import de.xbrowniecodez.jbytemod.JByteMod;
+import me.grax.jbytemod.decompiler.Decompiler;
 import me.grax.jbytemod.ui.DecompilerPanel;
 import org.benf.cfr.reader.PluginRunner;
 import org.benf.cfr.reader.apiunreleased.ClassFileSource2;
@@ -9,9 +10,9 @@ import org.benf.cfr.reader.apiunreleased.JarContent;
 import org.benf.cfr.reader.bytecode.analysis.parse.utils.Pair;
 import org.benf.cfr.reader.entities.ClassFile;
 import org.benf.cfr.reader.entities.Method;
-import org.benf.cfr.reader.entities.constantpool.ConstantPool;
 import org.benf.cfr.reader.state.ClassFileSourceImpl;
 import org.benf.cfr.reader.state.DCCommonState;
+import org.benf.cfr.reader.state.TypeUsageCollectingDumper;
 import org.benf.cfr.reader.util.AnalysisType;
 import org.benf.cfr.reader.util.bytestream.BaseByteData;
 import org.benf.cfr.reader.util.getopt.OptionsImpl;
@@ -19,7 +20,6 @@ import org.benf.cfr.reader.util.output.ToStringDumper;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.io.*;
-import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -139,14 +139,12 @@ public class CFRDecompiler extends Decompiler {
             PluginRunner runner = new PluginRunner(ops, cfs);
             if (mn != null) {
                 BaseByteData data = new BaseByteData(b);
-                ClassFile cf = new ClassFile(data, "", initDCState(ops, cfs));
-                Field cpf = Method.class.getDeclaredField("cp");
-                Field descI = Method.class.getDeclaredField("descriptorIndex");
-                descI.setAccessible(true);
-                cpf.setAccessible(true);
+                DCCommonState state = initDCState(ops, cfs);
+                ClassFile cf = new ClassFile(data, "", state);
+                state.configureWith(cf);
+                cf.analyseTop(state, new TypeUsageCollectingDumper(state.getOptions(), cf));
                 for (Method m : cf.getMethodByName(mn.name)) {
-                    ConstantPool cp = (ConstantPool) cpf.get(m);
-                    if (cp.getUTF8Entry(descI.getInt(m)).getValue().equals(mn.desc)) {
+                    if (m.getMethodPrototype().getOriginalDescriptor().equals(mn.desc)) {
                         ToStringDumper tsd = new ToStringDumper();
                         m.dump(tsd, true);
                         return tsd.toString();

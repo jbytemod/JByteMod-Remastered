@@ -3,7 +3,7 @@ package me.grax.jbytemod.res;
 import com.strobel.decompiler.DecompilerSettings;
 import de.xbrowniecodez.jbytemod.Main;
 import de.xbrowniecodez.jbytemod.utils.Utils;
-import me.grax.jbytemod.decompiler.CFRDecompiler;
+import de.xbrowniecodez.jbytemod.decompiler.CFRDecompiler;
 
 import me.grax.jbytemod.utils.ErrorDisplay;
 import me.grax.jbytemod.res.Option.Type;

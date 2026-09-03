@@ -2,6 +2,7 @@ package me.grax.jbytemod.ui;
 
 import de.xbrowniecodez.jbytemod.Main;
 import de.xbrowniecodez.jbytemod.decompiler.ASMifierDecompiler;
+import de.xbrowniecodez.jbytemod.decompiler.CFRDecompiler;
 import de.xbrowniecodez.jbytemod.decompiler.JDCoreDecompiler;
 import de.xbrowniecodez.jbytemod.decompiler.VineflowerDecompiler;
 import de.xbrowniecodez.jbytemod.JByteMod;
