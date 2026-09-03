@@ -6,7 +6,6 @@ import de.xbrowniecodez.jbytemod.archive.AndroidArchive;
 import me.grax.jbytemod.JarArchive;
 import de.xbrowniecodez.jbytemod.ui.dialogue.InsnEditDialogue;
 import de.xbrowniecodez.jbytemod.ui.tree.SortedTreeNode;
-import me.grax.jbytemod.ui.TreeCellRenderer;
 import me.grax.jbytemod.utils.ErrorDisplay;
 import me.grax.jbytemod.utils.MethodUtils;
 import me.grax.jbytemod.utils.asm.FrameGen;

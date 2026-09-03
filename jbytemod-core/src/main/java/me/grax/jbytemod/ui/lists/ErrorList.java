@@ -2,6 +2,7 @@ package me.grax.jbytemod.ui.lists;
 
 import de.xbrowniecodez.jbytemod.Main;
 import de.xbrowniecodez.jbytemod.JByteMod;
+import de.xbrowniecodez.jbytemod.ui.SvgIcons;
 import me.grax.jbytemod.analysis.errors.EmptyMistake;
 import me.grax.jbytemod.analysis.errors.ErrorAnalyzer;
 import me.grax.jbytemod.analysis.errors.Mistake;
@@ -23,7 +24,7 @@ import java.util.concurrent.Future;
 
 public class ErrorList extends JList<Mistake> {
     private MyCodeList cl;
-    private ImageIcon warning;
+    private Icon warning;
     private ListCellRenderer<? super Mistake> oldRenderer;
     private JByteMod jbm;
     private final ExecutorService analyzerExecutor;
@@ -39,7 +40,7 @@ public class ErrorList extends JList<Mistake> {
             return thread;
         });
         this.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
-        this.warning = new ImageIcon(Toolkit.getDefaultToolkit().getImage(this.getClass().getResource("/resources/warning.png")));
+        this.warning = SvgIcons.icon("status/warning");
         this.cl = cl;
         cl.setErrorList(this);
         this.setSelectionModel(new DefaultListSelectionModel() {

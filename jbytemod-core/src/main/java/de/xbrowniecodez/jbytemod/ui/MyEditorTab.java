@@ -107,7 +107,7 @@ public class MyEditorTab extends JPanel {
         JPanel header = new JPanel(new BorderLayout(8, 0));
         header.setOpaque(false);
         header.add(method, BorderLayout.CENTER);
-        bytecodeStatus.setIcon(new ImageIcon(getClass().getResource("/resources/warning.png")));
+        bytecodeStatus.setIcon(SvgIcons.icon("status/warning"));
         bytecodeStatus.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 2));
         bytecodeStatus.setVisible(false);
         header.add(bytecodeStatus, BorderLayout.EAST);

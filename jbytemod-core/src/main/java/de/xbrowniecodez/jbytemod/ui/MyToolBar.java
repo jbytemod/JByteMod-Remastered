@@ -7,8 +7,6 @@ import me.grax.jbytemod.ui.JAccessHelper;
 import me.grax.jbytemod.utils.ErrorDisplay;
 
 import javax.swing.*;
-import java.awt.*;
-import java.awt.geom.Path2D;
 import java.awt.event.ActionListener;
 import java.util.concurrent.ExecutionException;
 
@@ -42,13 +40,13 @@ public class MyToolBar extends JToolBar {
             });
             this.add(applyButton);
             if (jbm.getJarArchive() instanceof RemoteJarArchive) {
-                freezeButton = makeNavigationToggleButton("Freeze connected JVM", createFreezeIcon());
+                freezeButton = makeNavigationToggleButton("Freeze connected JVM", SvgIcons.icon("toolbar/freeze"));
                 freezeButton.addActionListener(e -> setFrozen(jbm));
                 this.add(freezeButton);
-                this.add(makeNavigationButton("Detach from connected JVM", createDetachIcon(), e -> {
+                this.add(makeNavigationButton("Detach from connected JVM", SvgIcons.icon("toolbar/detach"), e -> {
                     jbm.detachAttachedJvm();
                 }));
-                this.add(makeNavigationButton("Terminate connected JVM", createTerminateIcon(), e -> {
+                this.add(makeNavigationButton("Terminate connected JVM", SvgIcons.icon("toolbar/terminate"), e -> {
                     jbm.terminateAttachedJvm();
                 }));
             }
@@ -66,142 +64,12 @@ public class MyToolBar extends JToolBar {
         }));
     }
 
-    private ImageIcon getIcon(String string) {
-        java.net.URL resource = getClass().getResource("/resources/toolbar/" + string + ".png");
-        if (resource == null) {
-            Main.INSTANCE.getLogger().warn("Missing toolbar icon: " + string);
-            return new ImageIcon();
-        }
-        return new ImageIcon(resource);
-    }
-
-    private Icon createTerminateIcon() {
-        return new Icon() {
-            @Override
-            public void paintIcon(Component component, Graphics graphics, int x, int y) {
-                Graphics2D g = (Graphics2D) graphics.create();
-                try {
-                    g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    Path2D stop = new Path2D.Double();
-                    stop.moveTo(x + 5, y + 1);
-                    stop.lineTo(x + 11, y + 1);
-                    stop.lineTo(x + 15, y + 5);
-                    stop.lineTo(x + 15, y + 11);
-                    stop.lineTo(x + 11, y + 15);
-                    stop.lineTo(x + 5, y + 15);
-                    stop.lineTo(x + 1, y + 11);
-                    stop.lineTo(x + 1, y + 5);
-                    stop.closePath();
-                    g.setColor(new Color(210, 58, 58));
-                    g.fill(stop);
-                    g.setColor(Color.WHITE);
-                    g.fillRect(x + 5, y + 5, 6, 6);
-                } finally {
-                    g.dispose();
-                }
-            }
-
-            @Override
-            public int getIconWidth() {
-                return 16;
-            }
-
-            @Override
-            public int getIconHeight() {
-                return 16;
-            }
-        };
-    }
-
-    private Icon createDetachIcon() {
-        return new Icon() {
-            @Override
-            public void paintIcon(Component component, Graphics graphics, int x, int y) {
-                Graphics2D g = (Graphics2D) graphics.create();
-                try {
-                    g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                    g.setColor(new Color(64, 140, 225));
-                    g.drawLine(x + 2, y + 5, x + 7, y + 10);
-                    g.drawLine(x + 5, y + 2, x + 10, y + 7);
-                    g.drawLine(x + 2, y + 2, x + 5, y + 5);
-                    g.drawLine(x + 7, y + 7, x + 10, y + 10);
-                    g.setColor(new Color(225, 145, 55));
-                    g.drawLine(x + 11, y + 5, x + 15, y + 5);
-                    g.drawLine(x + 11, y + 11, x + 15, y + 11);
-                } finally {
-                    g.dispose();
-                }
-            }
-
-            @Override
-            public int getIconWidth() {
-                return 16;
-            }
-
-            @Override
-            public int getIconHeight() {
-                return 16;
-            }
-        };
-    }
-
-    private Icon createFreezeIcon() {
-        return new Icon() {
-            @Override
-            public void paintIcon(Component component, Graphics graphics, int x, int y) {
-                Graphics2D g = (Graphics2D) graphics.create();
-                try {
-                    g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g.setColor(new Color(64, 140, 225));
-                    g.fillRoundRect(x + 3, y + 2, 4, 12, 2, 2);
-                    g.fillRoundRect(x + 9, y + 2, 4, 12, 2, 2);
-                } finally {
-                    g.dispose();
-                }
-            }
-
-            @Override
-            public int getIconWidth() {
-                return 16;
-            }
-
-            @Override
-            public int getIconHeight() {
-                return 16;
-            }
-        };
-    }
-
-    private Icon createResumeIcon() {
-        return new Icon() {
-            @Override
-            public void paintIcon(Component component, Graphics graphics, int x, int y) {
-                Graphics2D g = (Graphics2D) graphics.create();
-                try {
-                    g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    Path2D play = new Path2D.Double();
-                    play.moveTo(x + 4, y + 2);
-                    play.lineTo(x + 14, y + 8);
-                    play.lineTo(x + 4, y + 14);
-                    play.closePath();
-                    g.setColor(new Color(70, 180, 95));
-                    g.fill(play);
-                } finally {
-                    g.dispose();
-                }
-            }
-
-            @Override
-            public int getIconWidth() {
-                return 16;
-            }
-
-            @Override
-            public int getIconHeight() {
-                return 16;
-            }
-        };
+    private Icon getIcon(String name) {
+        return SvgIcons.icon("toolbar/" + switch (name) {
+            case "table" -> "access";
+            case "plug" -> "attach";
+            default -> name;
+        });
     }
 
     private JToggleButton makeNavigationToggleButton(String action, Icon icon) {
@@ -255,7 +123,7 @@ public class MyToolBar extends JToolBar {
         if (freezeButton == null) return;
         freezeButton.setSelected(frozen);
         freezeButton.setToolTipText(frozen ? "Resume connected JVM" : "Freeze connected JVM");
-        freezeButton.setIcon(frozen ? createResumeIcon() : createFreezeIcon());
+        freezeButton.setIcon(SvgIcons.icon(frozen ? "toolbar/resume" : "toolbar/freeze"));
         freezeButton.setEnabled(true);
         setTargetActionsEnabled(!frozen);
     }

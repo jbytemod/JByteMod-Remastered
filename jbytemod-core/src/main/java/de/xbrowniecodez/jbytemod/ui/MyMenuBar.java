@@ -40,7 +40,7 @@ import java.util.List;
 public class MyMenuBar extends JMenuBar {
     private JMenu pluginMenu;
 
-    private static final Icon searchIcon = new ImageIcon(MyMenuBar.class.getResource("/resources/search.png"));
+    private static final Icon searchIcon = SvgIcons.icon("toolbar/search");
     private JByteMod jbm;
     private File lastFile;
     private boolean agent;
