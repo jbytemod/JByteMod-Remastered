@@ -1,9 +1,9 @@
-package me.grax.jbytemod.ui;
+package de.xbrowniecodez.jbytemod.ui;
 
-import de.xbrowniecodez.jbytemod.ui.MyEditorTab;
 import de.xbrowniecodez.jbytemod.Main;
 import de.xbrowniecodez.jbytemod.JByteMod;
 import de.xbrowniecodez.jbytemod.ui.lists.SearchList;
+import me.grax.jbytemod.ui.OpcodeTable;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -18,10 +18,14 @@ import java.awt.event.MouseEvent;
 
 public class MyTabbedPane extends JTabbedPane {
     private MyEditorTab editorTab;
+    private final ResourceEditorPanel resourceEditor;
 
     public MyTabbedPane(JByteMod jbm) {
         this.editorTab = new MyEditorTab(jbm);
         this.addTab("Editor", editorTab);
+        this.resourceEditor = new ResourceEditorPanel(jbm);
+        this.addTab("Resource", resourceEditor);
+        this.setEnabledAt(indexOfComponent(resourceEditor), false);
         SearchList searchList = new SearchList(jbm);
         jbm.setSearchList(searchList);
         JLabel search = new JLabel(Main.INSTANCE.getJByteMod().getLanguageRes().getResource("search_results"));
@@ -67,6 +71,7 @@ public class MyTabbedPane extends JTabbedPane {
     }
 
     public void selectClass(ClassNode cn) {
+        leaveResourceEditor();
         this.editorTab.selectClass(cn);
     }
 
@@ -89,7 +94,36 @@ public class MyTabbedPane extends JTabbedPane {
     }
 
     public void selectMethod(ClassNode cn, MethodNode mn) {
+        leaveResourceEditor();
         this.editorTab.selectMethod(cn, mn);
+    }
+
+    public void selectResource(String path) {
+        if (!resourceEditor.openResource(path)) {
+            return;
+        }
+        int index = indexOfComponent(resourceEditor);
+        String normalized = path.replace('\\', '/');
+        int slash = normalized.lastIndexOf('/');
+        setTitleAt(index, "Resource: " + (slash < 0 ? normalized : normalized.substring(slash + 1)));
+        setEnabledAt(index, true);
+        setSelectedIndex(index);
+    }
+
+    public void clearResourceEditor() {
+        int index = indexOfComponent(resourceEditor);
+        if (getSelectedComponent() == resourceEditor) {
+            setSelectedComponent(editorTab);
+        }
+        resourceEditor.clearResource();
+        setTitleAt(index, "Resource");
+        setEnabledAt(index, false);
+    }
+
+    private void leaveResourceEditor() {
+        if (getSelectedComponent() == resourceEditor) {
+            setSelectedComponent(editorTab);
+        }
     }
 
     @Override

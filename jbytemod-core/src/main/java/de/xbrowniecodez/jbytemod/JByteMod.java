@@ -15,6 +15,7 @@ import me.grax.jbytemod.res.Options;
 import me.grax.jbytemod.ui.*;
 import de.xbrowniecodez.jbytemod.ui.MyMenuBar;
 import de.xbrowniecodez.jbytemod.ui.MyToolBar;
+import de.xbrowniecodez.jbytemod.ui.MyTabbedPane;
 import de.xbrowniecodez.jbytemod.ui.lists.LVPList;
 import me.grax.jbytemod.ui.graph.ControlFlowPanel;
 import me.grax.jbytemod.ui.lists.MyCodeList;
@@ -170,7 +171,9 @@ public class JByteMod extends JFrame {
             }
         }
 
+        clearResourceEditor();
         jarArchive = archive;
+        filePath = null;
         lastEditFile = "attached process";
         lastSelectedTreeEntries.clear();
         Decompiler.clearCache();
@@ -245,6 +248,7 @@ public class JByteMod extends JFrame {
             } catch (Exception ignored) {
             }
         }
+        clearResourceEditor();
         jarArchive = archive;
     }
 
@@ -358,6 +362,7 @@ public class JByteMod extends JFrame {
         }
         JarArchive snapshot = new JarArchive(remoteArchive.getClasses(), new HashMap<>());
         snapshot.setJarManifest(remoteArchive.getJarManifest());
+        clearResourceEditor();
         jarArchive = snapshot;
         lastEditFile = editFile;
         setJMenuBar(myMenuBar = new MyMenuBar(this, false));
@@ -431,6 +436,18 @@ public class JByteMod extends JFrame {
         lastSelectedTreeEntries.put(cn, null);
         if (lastSelectedTreeEntries.size() > 5) {
             lastSelectedTreeEntries.remove(lastSelectedTreeEntries.keySet().iterator().next());
+        }
+    }
+
+    public void selectResource(String path) {
+        currentNode = null;
+        currentMethod = null;
+        tabbedPane.selectResource(path);
+    }
+
+    private void clearResourceEditor() {
+        if (tabbedPane != null) {
+            tabbedPane.clearResourceEditor();
         }
     }
 

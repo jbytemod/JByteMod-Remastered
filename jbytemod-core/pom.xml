@@ -75,7 +75,17 @@
 		<dependency>
 			<groupId>com.fifesoft</groupId>
 			<artifactId>rsyntaxtextarea</artifactId>
-			<version>3.5.1</version>
+			<version>4.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.twelvemonkeys.imageio</groupId>
+			<artifactId>imageio-webp</artifactId>
+			<version>3.14.0</version>
+		</dependency>
+		<dependency>
+			<groupId>dev.qtechnologies</groupId>
+			<artifactId>axml</artifactId>
+			<version>2.1.5</version>
 		</dependency>
 
 		<!--		<dependency>-->
@@ -356,6 +366,7 @@
 						<transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
 							<resource>LICENSE</resource>
 						</transformer>
+						<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
 					</transformers>
 				</configuration>
 				<executions>
